@@ -1,0 +1,119 @@
+esphome:
+  name: lq-y06-ai-universal-remote-ir
+  friendly_name: LQ-Y06 AI Universal Remote (IR)
+
+bk72xx:
+  board: cbu
+
+# Enable device logging via serial/OTA
+logger:
+
+# Enable Home Assistant native API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Enable OTA firmware updates (via ESPHome)
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  # Optional: set static IP address if needed
+  #use_address: 192.168.1.146
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Fallback AP used when Wi-Fi connection fails
+  ap:
+    ssid: !secret wifi_ap_ssid
+    password: !secret wifi_ap_password
+
+# Enables captive portal web interface if using fallback AP
+captive_portal:
+
+
+# --- BUTTON ---
+button:
+  - platform: restart
+    id: restart_device
+    name: "Reiniciar/Reset LQ-Y06"
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: P22
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "LQ-Y06 Button"
+
+    # Short press → restart device
+    on_click:
+      - min_length: 50ms
+        max_length: 800ms
+        then:
+          - button.press: restart_device
+
+      # Long press → only log message (Wi-Fi reset not supported on BK7231N)
+      - min_length: 2s
+        max_length: 6s
+        then:
+          - logger.log: "Long press detected — WiFi reset not supported on BK7231N"
+
+
+# --- AIR CONDITIONER CONTROL (Midea IR) ---
+climate:
+  - platform: midea_ir
+    name: "AC Corredor"
+
+
+# --- DEBUG SENSORS ---
+# Base fdefinition for the sensors
+debug:
+  update_interval: 30s
+
+# Sensores
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: Reset Reason
+  - platform: libretiny
+    version:
+      name: LibreTiny Version
+
+
+# --- LED OUTPUT ---
+output:
+  - platform: gpio
+    pin:
+      number: P24
+      inverted: false
+    id: status_led_output
+
+
+# --- INFRARED RECEIVER ---
+remote_receiver:
+  pin:
+    number: P8
+    inverted: true
+    mode: INPUT_PULLUP
+  dump: all
+
+  # Blink LED every time an IR signal is received
+  on_raw:
+    then:
+      - output.turn_on: status_led_output
+      - delay: 100ms
+      - output.turn_off: status_led_output
+
+
+# --- INFRARED TRANSMITTER ---
+remote_transmitter:
+  pin: P7
+  carrier_duty_percent: 50%
+  # Blink LED during IR transmission
+  on_transmit:
+    then:
+      - output.turn_on: status_led_output
+      - delay: 150ms
+      - output.turn_off: status_led_output
