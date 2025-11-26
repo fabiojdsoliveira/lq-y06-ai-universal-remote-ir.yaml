@@ -4,4 +4,4 @@ The yaml file for ESPHome in order for the lq-y06-ai-universal-remote-ir (infrar
 Not Tuya "ing" anymore. :P
 
 Find out more on Youtube: 
-
+https://youtu.be/iHYZFvPs8lI
